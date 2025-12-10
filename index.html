@@ -689,7 +689,7 @@
                         // Convert shorthand syntax to standard task list syntax before parsing
                         let processedContent = column.content
                             .replace(/^(\s*)\+\s+(.*)$/gm, '$1- [ ] $2')  // + → - [ ]
-                            .replace(/^(\s*)×\s+(.*)$/gm, '$1- [x] $2');  // × → - [x]
+                            .replace(/^(\s*)\*\s+(.*)$/gm, '$1- [x] $2');  // * → - [x]
                         
                         html = marked.parse(processedContent);
                         
@@ -1065,18 +1065,18 @@
                     return;
                 }
                 
-                // Task list with × (checked shorthand)
-                const timesMatch = currentLine.match(/^(\s*)(×)\s+(.*)$/);
-                if (timesMatch) {
+                // Task list with * (checked shorthand)
+                const starMatch = currentLine.match(/^(\s*)(\*)\s+(.*)$/);
+                if (starMatch) {
                     e.preventDefault();
-                    const [, indent, , content] = timesMatch;
+                    const [, indent, , content] = starMatch;
                     
                     if (!content.trim()) {
                         const lineStart = cursorPos - currentLine.length;
                         textarea.value = value.substring(0, lineStart) + value.substring(cursorPos);
                         textarea.selectionStart = textarea.selectionEnd = lineStart;
                     } else {
-                        const newLine = `\n${indent}× `;
+                        const newLine = `\n${indent}* `;
                         textarea.value = value.substring(0, cursorPos) + newLine + value.substring(cursorPos);
                         textarea.selectionStart = textarea.selectionEnd = cursorPos + newLine.length;
                     }
