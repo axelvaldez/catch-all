@@ -162,12 +162,51 @@
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
 
         .settings-content h2 {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-size: 24px;
+        }
+
+        .settings-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .settings-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .settings-tab:hover {
+            color: #333;
+        }
+
+        .settings-tab.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         .setting-item {
@@ -345,20 +384,32 @@
         <div class="settings-content">
             <h2>Settings</h2>
             
-            <div class="setting-item">
-                <label for="visible-columns">Visible Columns:</label>
-                <input type="number" id="visible-columns" min="1" max="10" value="3">
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="columns">Columns</button>
+                <button class="settings-tab" data-tab="sync">GitHub Sync</button>
             </div>
 
-            <div class="setting-item">
-                <label>Manage Columns:</label>
-                <div class="columns-list" id="columns-list"></div>
-                <button class="add-column-btn" id="add-column-btn">+ Add Column</button>
+            <div class="tab-content active" id="tab-columns">
+                <div class="setting-item">
+                    <label for="visible-columns">Visible Columns:</label>
+                    <input type="number" id="visible-columns" min="1" max="10" value="3">
+                </div>
+
+                <div class="setting-item">
+                    <label>Manage Columns:</label>
+                    <div class="columns-list" id="columns-list"></div>
+                    <button class="add-column-btn" id="add-column-btn">+ Add Column</button>
+                </div>
+
+                <div class="settings-help" style="margin-top: 20px;">
+                    <strong>Hotkeys:</strong><br>
+                    Ctrl+E - Enter/Exit Edit Mode<br>
+                    Ctrl+, - Open Settings<br>
+                    Esc - Save & Close
+                </div>
             </div>
 
-            <div class="sync-section">
-                <h3>GitHub Sync</h3>
-                
+            <div class="tab-content" id="tab-sync">
                 <div class="setting-item">
                     <label for="github-token">Personal Access Token:</label>
                     <input type="password" id="github-token" placeholder="ghp_...">
@@ -379,13 +430,6 @@
                     3. Enter token and repo above<br>
                     4. Data syncs automatically on changes
                 </div>
-            </div>
-
-            <div class="settings-help">
-                <strong>Hotkeys:</strong><br>
-                Ctrl+E - Enter/Exit Edit Mode<br>
-                Ctrl+, - Open Settings<br>
-                Esc - Save & Close
             </div>
         </div>
     </div>
@@ -486,6 +530,14 @@
                     if (e.target.id === 'settings-modal') {
                         this.closeSettings();
                     }
+                });
+
+                // Tab switching
+                document.querySelectorAll('.settings-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        const tabName = e.target.dataset.tab;
+                        this.switchSettingsTab(tabName);
+                    });
                 });
 
                 // Visible columns input
@@ -674,6 +726,19 @@
                 document.getElementById('github-token').value = this.githubToken;
                 document.getElementById('github-repo').value = this.githubRepo;
                 this.renderColumnsList();
+            }
+
+            switchSettingsTab(tabName) {
+                // Update tab buttons
+                document.querySelectorAll('.settings-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.tab === tabName);
+                });
+                
+                // Update tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`tab-${tabName}`).classList.add('active');
             }
 
             closeSettings() {
