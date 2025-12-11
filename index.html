@@ -665,12 +665,7 @@
                         
                         // Auto-save on input
                         textarea.addEventListener('input', () => {
-                            // Convert shorthand to standard format before saving
-                            let content = textarea.value;
-                            content = content
-                                .replace(/^(\s*)\+\s+(.*)$/gm, '$1- [ ] $2')  // + → - [ ]
-                                .replace(/^(\s*)\*\s+(.*)$/gm, '$1- [x] $2');  // * → - [x]
-                            this.columns[index].content = content;
+                            this.columns[index].content = textarea.value;
                             this.saveColumns();
                         });
                         
@@ -688,8 +683,13 @@
                         const viewEl = document.createElement('div');
                         viewEl.className = 'markdown-view';
                         
+                        // Convert shorthand to standard format before parsing
+                        let content = column.content
+                            .replace(/^(\s*)\+\s+(.*)$/gm, '$1- [ ] $2')  // + → - [ ]
+                            .replace(/^(\s*)x\s+(.*)$/gm, '$1- [x] $2');  // x → - [x]
+                        
                         // Parse markdown and process task lists
-                        let html = marked.parse(column.content);
+                        let html = marked.parse(content);
                         
                         // Replace task list items (do this BEFORE replacing standalone checkboxes)
                         // Checked tasks with strikethrough
@@ -1063,18 +1063,18 @@
                     return;
                 }
                 
-                // Task list with * (checked shorthand)
-                const starMatch = currentLine.match(/^(\s*)(\*)\s+(.*)$/);
-                if (starMatch) {
+                // Task list with x (checked shorthand)
+                const xMatch = currentLine.match(/^(\s*)(x)\s+(.*)$/);
+                if (xMatch) {
                     e.preventDefault();
-                    const [, indent, , content] = starMatch;
+                    const [, indent, , content] = xMatch;
                     
                     if (!content.trim()) {
                         const lineStart = cursorPos - currentLine.length;
                         textarea.value = value.substring(0, lineStart) + value.substring(cursorPos);
                         textarea.selectionStart = textarea.selectionEnd = lineStart;
                     } else {
-                        const newLine = `\n${indent}* `;
+                        const newLine = `\n${indent}x `;
                         textarea.value = value.substring(0, cursorPos) + newLine + value.substring(cursorPos);
                         textarea.selectionStart = textarea.selectionEnd = cursorPos + newLine.length;
                     }
@@ -1194,11 +1194,21 @@
                     // Check if this line contains our task
                     if (line.includes(taskContent)) {
                         if (checkboxElement.classList.contains('checked')) {
-                            // Mark as unchecked: [x] -> [ ]
-                            lines[i] = line.replace(/\[x\]/i, '[ ]');
+                            // Mark as unchecked
+                            // Handle both standard [x] and shorthand x
+                            if (line.match(/\[x\]/i)) {
+                                lines[i] = line.replace(/\[x\]/i, '[ ]');
+                            } else if (line.match(/^(\s*)x\s+/)) {
+                                lines[i] = line.replace(/^(\s*)x\s+/, '$1+ ');
+                            }
                         } else {
-                            // Mark as checked: [ ] -> [x]
-                            lines[i] = line.replace(/\[\s*\]/, '[x]');
+                            // Mark as checked
+                            // Handle both standard [ ] and shorthand +
+                            if (line.match(/\[\s*\]/)) {
+                                lines[i] = line.replace(/\[\s*\]/, '[x]');
+                            } else if (line.match(/^(\s*)\+\s+/)) {
+                                lines[i] = line.replace(/^(\s*)\+\s+/, '$1x ');
+                            }
                         }
                         found = true;
                         break;
