@@ -20,9 +20,13 @@
 
         #app {
             display: flex;
-            height: 100vh;
+            height: calc(100vh - 30px);
             overflow-x: auto;
             overflow-y: hidden;
+        }
+
+        #app.hidden {
+            display: none;
         }
 
         .column {
@@ -121,27 +125,17 @@
         }
 
         #settings-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: white;
-            border: 1px solid #ddd;
+            background: none;
+            border: none;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            z-index: 999;
-            transition: all 0.2s;
+            font-size: 28px;
+            padding: 0;
+            margin-left: 8px;
+            color: #666;
         }
 
         #settings-button:hover {
-            background: #f5f5f5;
-            transform: rotate(90deg);
+            color: #333;
         }
 
         #settings-modal {
@@ -378,12 +372,114 @@
             background: #6c757d;
             cursor: not-allowed;
         }
+
+        /* Login screen */
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: #f5f5f5;
+        }
+
+        #login-screen.hidden {
+            display: none;
+        }
+
+        .login-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .login-legend {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+            max-width: 400px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .login-input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            width: 300px;
+            text-align: center;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .login-input:focus {
+            outline: none;
+            box-shadow: 0 2px 12px rgba(0,123,255,0.3);
+        }
+
+        .login-error {
+            color: #dc3545;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        /* Status bar */
+        #status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: white;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        #status-bar.hidden {
+            display: none;
+        }
+
+        .status-message {
+            color: #666;
+            flex: 1;
+        }
+
+        .status-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: underline;
+        }
+
+        .logout-btn:hover {
+            color: #0056b3;
+        }
     </style>
 </head>
 <body>
+    <div id="login-screen">
+        <div class="login-title">CCCOLUMNS</div>
+        <div class="login-legend">Enter thy secret cipher, that thou mayst gain passage unto thine hallowed scriptures</div>
+        <input type="password" id="password-input" class="login-input" autofocus>
+        <div class="login-error" id="login-error"></div>
+    </div>
+
     <div class="edit-mode-indicator" id="edit-indicator">EDIT MODE - Press Esc to save</div>
-    
-    <button id="settings-button" title="Settings (Ctrl+,)">⚙️</button>
 
     <div id="settings-modal">
         <div class="settings-content">
@@ -439,13 +535,79 @@
         </div>
     </div>
 
-    <div id="app"></div>
+    <div id="app" class="hidden"></div>
+
+    <div id="status-bar" class="hidden">
+        <div class="status-message" id="status-message"></div>
+        <div class="status-bar-right">
+            <button class="logout-btn" id="logout-btn">Logout</button>
+            <button id="settings-button" title="Settings (Ctrl+,)">⚙</button>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
+        // Password protection
+        // To set your password, generate SHA-256 hash of your password at: https://emn178.github.io/online-tools/sha256.html
+        // Replace the hash below with your password's hash
+        const PASSWORD_HASH = '47bf9eec014b3707612577ed1c2cb2e860937c78080abd8240c71a5ddedcd1e2';
+        
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function checkAuth() {
+            const authToken = localStorage.getItem('catch-all-auth');
+            return authToken === PASSWORD_HASH;
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('status-bar').classList.remove('hidden');
+            document.getElementById('settings-button').classList.remove('hidden');
+            // Initialize the app
+            new CatchAllApp();
+        }
+
+        function showLogin() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('status-bar').classList.add('hidden');
+            document.getElementById('settings-button').classList.add('hidden');
+        }
+
+        document.getElementById('password-input').addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const password = e.target.value;
+                const hash = await hashPassword(password);
+                
+                if (hash === PASSWORD_HASH) {
+                    localStorage.setItem('catch-all-auth', hash);
+                    showApp();
+                } else {
+                    document.getElementById('login-error').textContent = 'Invalid password';
+                    e.target.value = '';
+                }
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('catch-all-auth');
+            location.reload();
+        });
+
+        // CatchAllApp class will be defined below, then auth check runs at the end
+
         class CatchAllApp {
             constructor() {
+                console.log('CatchAllApp constructor called');
                 this.columns = this.loadColumns();
+                console.log('Loaded columns:', this.columns);
                 this.visibleColumns = this.loadVisibleColumns();
                 this.editMode = false;
                 this.editingTitle = null;
@@ -456,7 +618,9 @@
                 
                 this.init();
                 this.setupEventListeners();
+                console.log('About to render');
                 this.render();
+                console.log('Render complete');
                 
                 // Try to sync on load if configured
                 if (this.githubToken && this.githubRepo) {
@@ -898,6 +1062,7 @@
                 }
 
                 this.syncInProgress = true;
+                this.showStatusBar('⬆ Sync in progress');
                 const fileName = 'catch-all-data.json';
                 const data = {
                     columns: this.columns,
@@ -951,9 +1116,11 @@
                     this.lastSyncTime = new Date();
                     console.log('Sync to GitHub successful!');
                     this.showSyncStatus('Synced to GitHub successfully', 'success');
+                    this.showStatusBar('↑ Sync done ✓');
                 } catch (error) {
                     console.error('Sync to GitHub failed:', error);
                     this.showSyncStatus(`Sync failed: ${error.message}`, 'error');
+                    this.showStatusBar('🔺 SYNC FAILED', true);
                 } finally {
                     this.syncInProgress = false;
                 }
@@ -965,6 +1132,7 @@
                 }
 
                 this.syncInProgress = true;
+                this.showStatusBar('⬇ Sync in progress');
                 const fileName = 'catch-all-data.json';
 
                 try {
@@ -1003,9 +1171,11 @@
 
                     this.render();
                     this.showSyncStatus('Synced from GitHub successfully', 'success');
+                    this.showStatusBar('↓ Sync done ✓');
                 } catch (error) {
                     console.error('Sync from GitHub failed:', error);
                     this.showSyncStatus(`Sync failed: ${error.message}`, 'error');
+                    this.showStatusBar('🔻 SYNC FAILED', true);
                 } finally {
                     this.syncInProgress = false;
                 }
@@ -1014,6 +1184,7 @@
             async manualSync() {
                 console.log('Manual sync started...');
                 this.showSyncStatus('Syncing...', 'info');
+                this.showStatusBar('⬇ Sync in progress');
                 await this.syncFromGitHub();
                 console.log('Manual sync completed');
             }
@@ -1222,10 +1393,28 @@
                     this.render();
                 }
             }
+
+            showStatusBar(message, isError = false) {
+                const statusEl = document.getElementById('status-message');
+                if (statusEl) {
+                    statusEl.textContent = message;
+                    if (isError) {
+                        statusEl.style.color = '#dc3545';
+                        statusEl.style.fontWeight = 'bold';
+                    } else {
+                        statusEl.style.color = '#666';
+                        statusEl.style.fontWeight = 'normal';
+                    }
+                }
+            }
         }
 
-        // Initialize the app
-        const app = new CatchAllApp();
+        // Check auth on load - runs after class is defined
+        if (checkAuth()) {
+            showApp();
+        } else {
+            showLogin();
+        }
     </script>
 </body>
 </html>
