@@ -613,7 +613,7 @@
     <div id="status-bar" class="hidden">
         <div class="status-message" id="status-message"></div>
         <div class="status-bar-right">
-            <button class="logout-btn" id="logout-btn">Logout</button>
+            <button class="logout-btn" id="auth-toggle-btn">Logout</button>
             <button id="settings-button" title="Settings (Ctrl+,)">⚙</button>
         </div>
     </div>
@@ -674,7 +674,7 @@
             }
         });
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('auth-toggle-btn').addEventListener('click', () => {
             localStorage.removeItem('catch-all-auth');
             localStorage.removeItem('catch-all-local-only');
             location.reload();
@@ -704,6 +704,7 @@
                 
                 this.init();
                 this.setupSettingsTabs();
+                this.setupAuthButton();
                 this.setupEventListeners();
                 console.log('About to render');
                 this.render();
@@ -751,6 +752,17 @@
                     if (syncTab) syncTab.style.display = 'block';
                     if (syncContent) syncContent.style.display = 'none'; // Start hidden, will show when tab clicked
                     if (installContent) installContent.style.display = 'none';
+                }
+            }
+
+            setupAuthButton() {
+                const authBtn = document.getElementById('auth-toggle-btn');
+                if (authBtn) {
+                    if (this.localOnlyMode) {
+                        authBtn.textContent = 'Login';
+                    } else {
+                        authBtn.textContent = 'Logout';
+                    }
                 }
             }
 
