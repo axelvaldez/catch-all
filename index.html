@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catch-All</title>
+    <title>CCCOLUMNS</title>
     <style>
         * {
             margin: 0;
@@ -107,21 +107,23 @@
 
         .edit-mode-indicator {
             position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+            bottom: 0;
+            left: 0;
+            right: 0;
             background: #007bff;
             color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 1000;
+            padding: 0 20px;
+            height: 30px;
             display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 1001;
         }
 
         .edit-mode-indicator.active {
-            display: block;
+            display: flex;
         }
 
         #settings-button {
@@ -425,6 +427,22 @@
             font-size: 14px;
         }
 
+        .local-only-link {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .local-only-link a {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .local-only-link a:hover {
+            text-decoration: underline;
+        }
+
         /* Status bar */
         #status-bar {
             position: fixed;
@@ -477,6 +495,9 @@
         <div class="login-legend">Enter thy secret cipher, that thou mayst gain passage unto thine hallowed scriptures</div>
         <input type="password" id="password-input" class="login-input" autofocus>
         <div class="login-error" id="login-error"></div>
+        <div class="local-only-link">
+            <a href="#" id="local-only-link">or enter in local-only mode</a>
+        </div>
     </div>
 
     <div class="edit-mode-indicator" id="edit-indicator">EDIT MODE - Press Esc to save</div>
@@ -488,6 +509,8 @@
             <div class="settings-tabs">
                 <button class="settings-tab active" data-tab="columns">Columns</button>
                 <button class="settings-tab" data-tab="sync">GitHub Sync</button>
+                <button class="settings-tab" data-tab="backup">Backup & Restore</button>
+                <button class="settings-tab" data-tab="install" style="display: none;">Install</button>
             </div>
 
             <div class="tab-content active" id="tab-columns">
@@ -518,7 +541,7 @@
 
                 <div class="setting-item">
                     <label for="github-repo">Repository (owner/repo):</label>
-                    <input type="text" id="github-repo" placeholder="username/my-catch-all-data">
+                    <input type="text" id="github-repo" placeholder="your-username/repository-name">
                 </div>
 
                 <button class="sync-button" id="sync-now-btn">Sync Now</button>
@@ -530,6 +553,55 @@
                     2. Generate a token at github.com/settings/tokens (needs 'repo' scope)<br>
                     3. Enter token and repo above<br>
                     4. Data syncs automatically on changes
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-backup">
+                <div class="setting-item">
+                    <label>Backup Data:</label>
+                    <button class="sync-button" id="backup-download-btn">Download Backup</button>
+                </div>
+
+                <div class="setting-item" style="margin-top: 30px;">
+                    <label for="backup-upload">Restore from Backup:</label>
+                    <input type="file" id="backup-upload" accept=".json" style="display: none;">
+                    <button class="sync-button" id="backup-upload-btn">Choose File to Restore</button>
+                    <div id="backup-status" style="margin-top: 10px; font-size: 13px; color: #666;"></div>
+                </div>
+
+                <div class="settings-help" style="margin-top: 15px;">
+                    <strong>About Backup & Restore:</strong><br>
+                    • Download creates a JSON file with all your data<br>
+                    • Restore replaces current data with backup file<br>
+                    • Backup includes all columns and settings<br>
+                    • Keep backups in a safe location
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-install">
+                <div class="setting-item">
+                    <h3 style="margin-bottom: 15px;">Install Your Own Instance</h3>
+                    <p style="margin-bottom: 15px; line-height: 1.6;">
+                        You're currently using CCCOLUMNS in local-only mode. Your data is saved only in your browser and is not synced or backed up anywhere.
+                    </p>
+                    <p style="margin-bottom: 15px; line-height: 1.6;">
+                        To enable cloud backup and sync across devices, you can install your own instance of CCCOLUMNS:
+                    </p>
+                    <ol style="line-height: 1.8; margin-left: 20px; margin-bottom: 20px;">
+                        <li>Fork or clone the repository from GitHub</li>
+                        <li>Set up your own password protection</li>
+                        <li>Deploy to your preferred hosting service</li>
+                        <li>Configure GitHub sync for cloud backup</li>
+                    </ol>
+                    <a href="https://github.com/axelvaldez/catch-all" target="_blank" style="display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; margin-top: 10px;">View on GitHub</a>
+                </div>
+
+                <div class="settings-help" style="margin-top: 20px;">
+                    <strong>Note:</strong><br>
+                    • Local-only mode stores data only in your browser<br>
+                    • Clearing browser data will delete your content<br>
+                    • Use the Backup tab to download your data regularly<br>
+                    • Installing your own instance gives you full control
                 </div>
             </div>
         </div>
@@ -562,7 +634,12 @@
 
         function checkAuth() {
             const authToken = localStorage.getItem('catch-all-auth');
-            return authToken === PASSWORD_HASH;
+            const localOnlyMode = localStorage.getItem('catch-all-local-only');
+            return authToken === PASSWORD_HASH || localOnlyMode === 'true';
+        }
+
+        function isLocalOnlyMode() {
+            return localStorage.getItem('catch-all-local-only') === 'true';
         }
 
         function showApp() {
@@ -598,7 +675,14 @@
 
         document.getElementById('logout-btn').addEventListener('click', () => {
             localStorage.removeItem('catch-all-auth');
+            localStorage.removeItem('catch-all-local-only');
             location.reload();
+        });
+
+        document.getElementById('local-only-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.setItem('catch-all-local-only', 'true');
+            showApp();
         });
 
         // CatchAllApp class will be defined below, then auth check runs at the end
@@ -611,19 +695,24 @@
                 this.visibleColumns = this.loadVisibleColumns();
                 this.editMode = false;
                 this.editingTitle = null;
+                this.localOnlyMode = isLocalOnlyMode();
                 this.githubToken = localStorage.getItem('catch-all-github-token') || '';
                 this.githubRepo = localStorage.getItem('catch-all-github-repo') || '';
                 this.syncInProgress = false;
                 this.lastSyncTime = null;
                 
                 this.init();
+                this.setupSettingsTabs();
                 this.setupEventListeners();
                 console.log('About to render');
                 this.render();
                 console.log('Render complete');
                 
-                // Try to sync on load if configured
-                if (this.githubToken && this.githubRepo) {
+                // Show initial status bar message
+                this.updateStatusBarMessage();
+                
+                // Try to sync on load if configured and not in local-only mode
+                if (!this.localOnlyMode && this.githubToken && this.githubRepo) {
                     this.syncFromGitHub();
                 }
             }
@@ -640,6 +729,27 @@
                 }
             }
 
+            setupSettingsTabs() {
+                // Hide/show tabs based on local-only mode
+                const syncTab = document.querySelector('[data-tab="sync"]');
+                const backupTab = document.querySelector('[data-tab="backup"]');
+                const installTab = document.querySelector('[data-tab="install"]');
+                
+                if (this.localOnlyMode) {
+                    // In local-only mode: show Columns, Backup, and Install tabs
+                    if (syncTab) syncTab.style.display = 'none';
+                    if (installTab) installTab.style.display = 'block';
+                    document.getElementById('tab-sync').style.display = 'none';
+                    document.getElementById('tab-install').style.display = 'block';
+                } else {
+                    // In authenticated mode: show Columns, GitHub Sync, and Backup tabs
+                    if (installTab) installTab.style.display = 'none';
+                    if (syncTab) syncTab.style.display = 'block';
+                    document.getElementById('tab-sync').style.display = 'block';
+                    document.getElementById('tab-install').style.display = 'none';
+                }
+            }
+
             loadColumns() {
                 const saved = localStorage.getItem('catch-all-columns');
                 return saved ? JSON.parse(saved) : [];
@@ -647,8 +757,8 @@
 
             saveColumns() {
                 localStorage.setItem('catch-all-columns', JSON.stringify(this.columns));
-                // Auto-sync to GitHub if configured
-                if (this.githubToken && this.githubRepo && !this.syncInProgress) {
+                // Auto-sync to GitHub if configured and not in local-only mode
+                if (!this.localOnlyMode && this.githubToken && this.githubRepo && !this.syncInProgress) {
                     this.debouncedSyncToGitHub();
                 }
             }
@@ -738,16 +848,31 @@
                 document.getElementById('github-token').addEventListener('change', (e) => {
                     this.githubToken = e.target.value;
                     localStorage.setItem('catch-all-github-token', this.githubToken);
+                    this.updateStatusBarMessage();
                 });
 
                 document.getElementById('github-repo').addEventListener('change', (e) => {
                     this.githubRepo = e.target.value;
                     localStorage.setItem('catch-all-github-repo', this.githubRepo);
+                    this.updateStatusBarMessage();
                 });
 
                 // Sync now button
                 document.getElementById('sync-now-btn').addEventListener('click', () => {
                     this.manualSync();
+                });
+
+                // Backup & Restore
+                document.getElementById('backup-download-btn').addEventListener('click', () => {
+                    this.downloadBackup();
+                });
+
+                document.getElementById('backup-upload-btn').addEventListener('click', () => {
+                    document.getElementById('backup-upload').click();
+                });
+
+                document.getElementById('backup-upload').addEventListener('change', (e) => {
+                    this.restoreBackup(e);
                 });
             }
 
@@ -1189,6 +1314,88 @@
                 console.log('Manual sync completed');
             }
 
+            downloadBackup() {
+                const data = {
+                    columns: this.columns,
+                    visibleColumns: this.visibleColumns,
+                    exportDate: new Date().toISOString(),
+                    version: '1.0'
+                };
+
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `cccolumns-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                this.showBackupStatus('Backup downloaded successfully!', 'success');
+            }
+
+            async restoreBackup(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+
+                    // Validate the backup data
+                    if (!data.columns || !Array.isArray(data.columns)) {
+                        throw new Error('Invalid backup file format');
+                    }
+
+                    // Confirm with user before restoring
+                    if (!confirm('This will replace all current data with the backup. Continue?')) {
+                        this.showBackupStatus('Restore cancelled', 'info');
+                        event.target.value = ''; // Reset file input
+                        return;
+                    }
+
+                    // Restore the data
+                    this.columns = data.columns;
+                    if (data.visibleColumns) {
+                        this.visibleColumns = data.visibleColumns;
+                        this.saveVisibleColumns();
+                    }
+                    this.saveColumns();
+                    this.render();
+                    this.renderColumnsList();
+
+                    this.showBackupStatus('Backup restored successfully!', 'success');
+                    this.showStatusBar('Backup restored successfully');
+                } catch (error) {
+                    console.error('Error restoring backup:', error);
+                    this.showBackupStatus('Error: Invalid backup file', 'error');
+                } finally {
+                    event.target.value = ''; // Reset file input
+                }
+            }
+
+            showBackupStatus(message, type) {
+                const statusEl = document.getElementById('backup-status');
+                if (statusEl) {
+                    statusEl.textContent = message;
+                    const colors = {
+                        success: '#28a745',
+                        error: '#dc3545',
+                        info: '#007bff'
+                    };
+                    statusEl.style.color = colors[type] || '#666';
+
+                    // Hide success messages after 3 seconds
+                    if (type === 'success') {
+                        setTimeout(() => {
+                            statusEl.textContent = '';
+                        }, 3000);
+                    }
+                }
+            }
+
             showSyncStatus(message, type) {
                 console.log(`Sync status: ${message} (${type})`);
                 const statusEl = document.getElementById('sync-status');
@@ -1405,6 +1612,39 @@
                         statusEl.style.color = '#666';
                         statusEl.style.fontWeight = 'normal';
                     }
+                }
+            }
+
+            updateStatusBarMessage() {
+                const statusEl = document.getElementById('status-message');
+                if (!statusEl) return;
+
+                if (this.localOnlyMode) {
+                    statusEl.innerHTML = 'Local-only mode — data saved in browser only. <a href="#" id="install-settings-link" style="color: #007bff; text-decoration: underline; cursor: pointer;">See installation guide</a>';
+                    
+                    // Add click handler for the link
+                    const link = document.getElementById('install-settings-link');
+                    if (link) {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            this.openSettings();
+                            this.switchSettingsTab('install');
+                        });
+                    }
+                } else if (!this.githubToken || !this.githubRepo) {
+                    statusEl.innerHTML = 'Saving locally only — <a href="#" id="github-settings-link" style="color: #007bff; text-decoration: underline; cursor: pointer;">configure GitHub in settings</a> for cloud backup';
+                    
+                    // Add click handler for the link
+                    const link = document.getElementById('github-settings-link');
+                    if (link) {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            this.openSettings();
+                            this.switchSettingsTab('sync');
+                        });
+                    }
+                } else {
+                    statusEl.textContent = '';
                 }
             }
         }
